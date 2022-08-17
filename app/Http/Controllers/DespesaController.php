@@ -2,15 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Carbon;
 use Illuminate\Http\Request;
+use App\Models\User;
 use App\Models\Despesa;
+use App\Models\Categoria;
 use App\Helpers\Paginador;
 use App\Exceptions\Responser;
-use App\Models\Categoria;
 
 class DespesaController extends Controller
 {
+
     public function store(Request $request)
     {
         $dados = json_decode($request->getContent(), true);
@@ -18,34 +22,51 @@ class DespesaController extends Controller
             'descricao' => 'required',
             'valor' => 'required|numeric',
             'data' => 'required|date_format:d/m/Y',
-            'categoria' => 'required|numeric'
         ];
         $request->validate($rules);
-        $categoria = Categoria::findOrFail($request->categoria);
+
+        if (isset($request->categoria)) {
+            $categoria = DB::table("categorias")->where('nome', 'like',  "%{$request->categoria}%")->get()?->first() ?? null;
+            if (is_null($categoria)) {
+                return Responser::error(404, "Categoria não encontrada!");
+            }
+        } else {
+            $categoria = DB::table("categorias")->where('nome', "=", 'Outras')->get()?->first();
+        }
         if ($this->DespesaJaExiste($request)) {
             return Responser::error(409, "Já existe uma Despesa com essa descrição para o mês informado");
         }
         $dados['fixa'] = $request->fixa ?? false;
         $dados['categoria_id'] = $categoria->id;
+        $dados['user_id'] = $request->user()->id;
         $despesa = Despesa::create($dados);
         $categoria = $despesa->categoria;
+        $user = $despesa->user;
         return $despesa;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $paginado = Despesa::with('categoria')->paginate(env('PER_PAGE', 15));
-        return Paginador::paginar($paginado);
+        $dados = $request->all();
+        if (!in_array('descricao', array_keys($dados))) {
+            $result = Despesa::with('categoria', 'user')->where('user_id', $request->user()->id)->paginate(env('PER_PAGE', 15));
+            return Paginador::paginar($result);
+        }
+        $result = Despesa::with('categoria', 'user')->where('user_id', $request->user()->id)->where('descricao', 'like', "%{$dados['descricao']}%");
+        return Paginador::paginar($result->paginate(env('PER_PAGE', 15)));
     }
 
-    public function show(int $id)
+    public function show(Request $request, int $id)
     {
-        return Despesa::with('categoria')->findOrFail($id);
+        return Despesa::where('user_id', $request->user()->id)->with('categoria', 'user')->findOrFail($id);
     }
 
     public function update(int $id, Request $request)
     {
         $existente = Despesa::findOrFail($id);
+        if ($existente->user->id != $request->user()->id) {
+            return Responser::error(403, "Despesa não pertence ao usuário!");
+        }
         $rules = [
             'descricao' => 'required',
             'valor' => 'required|numeric',
@@ -62,8 +83,11 @@ class DespesaController extends Controller
         return $existente;
     }
 
-    public function destroy(Despesa $Despesa)
+    public function destroy(Request $request, Despesa $Despesa)
     {
+        if ($Despesa->user->id != $request->user()->id) {
+            return Responser::error(403, "Despesa não pertence ao usuário!");
+        }
         $copia = clone $Despesa;
         $Despesa->delete();
         return response()->json(["message" => "Despesa apagada com sucesso!", "entidade" => $copia]);
@@ -72,7 +96,14 @@ class DespesaController extends Controller
     private function DespesaJaExiste(Request $request)
     {
         $date = Carbon::createFromFormat("d/m/Y", $request->data);
-        $noBd = Despesa::whereMonth('data', $date->month)->whereYear('data', $date->year)->where('descricao', $request->descricao)->get();
+        $noBd = Despesa::whereMonth('data', $date->month)->whereYear('data', $date->year)->where('descricao', $request->descricao)->where('user_id', $request->user()->id)->get();
         return count($noBd) > 0;
+    }
+
+    public function porMes(Request $request, int $ano, int $mes)
+    {
+        $date = Carbon::createFromFormat("d/m/Y", "01/" . $mes . "/" . $ano);
+        $noBd = Despesa::whereMonth('data', $date->month)->whereYear('data', $date->year)->where('user_id', $request->user()->id)->with('categoria');
+        return Paginador::paginar($noBd->paginate(env('PER_PAGE', 15)));
     }
 }

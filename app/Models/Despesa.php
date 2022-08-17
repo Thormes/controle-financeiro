@@ -6,18 +6,23 @@ use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Models\User;
 
 class Despesa extends Model
 {
     use HasFactory;
     protected $table = 'despesas';
-    protected $fillable = ['descricao', 'valor', 'data', 'fixa', 'categoria_id'];
+    protected $fillable = ['descricao', 'valor', 'data', 'fixa', 'categoria_id', 'user_id'];
     protected $casts = ['fixa' => 'boolean', 'data' => 'date:d/m/Y'];
-    protected $hidden = ['updated_at', 'created_at', 'categoria_id'];
+    protected $hidden = ['id', 'updated_at', 'created_at', 'categoria_id', 'user_id'];
 
     public function categoria()
     {
         return $this->belongsTo(Categoria::class);
+    }
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function setDataAttribute($value)
@@ -36,5 +41,4 @@ class Despesa extends Model
             get: fn ($value) => $value / 100
         );
     }
-
 }

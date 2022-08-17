@@ -8,6 +8,7 @@ use Illuminate\Foundation\Exceptions\Handler as ExceptionHandler;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use DomainException;
 use App\Exceptions\Responser;
+use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
 class Handler extends ExceptionHandler
 {
@@ -65,6 +66,14 @@ class Handler extends ExceptionHandler
         }
         if ($exception instanceof \Symfony\Component\HttpKernel\Exception\NotFoundHttpException) {
             return Responser::error(404, sprintf("Caminho \"%s\" não é válido", $request->url()));
+        }
+        if ($exception instanceof
+            \Illuminate\Auth\AuthenticationException
+        ) {
+            return Responser::error(403, "Usuário não tem permissão para acessar esse recurso");
+        }
+        if (str_contains($exception->getMessage(), "[login]") && $exception instanceof RouteNotFoundException) {
+            return Responser::error(401, "Usuário não está autenticado (token ausente ou inválido)");
         }
         return Responser::error(500, $exception->getMessage());
     }

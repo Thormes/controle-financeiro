@@ -2,18 +2,24 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Casts\Attribute;
+use App\Models\User;
 
 class Receita extends Model
 {
     use HasFactory;
     protected $table = 'receitas';
-    protected $fillable = ['descricao', 'valor', 'data'];
+    protected $fillable = ['descricao', 'valor', 'data', 'user_id'];
     protected $casts = ['data' => 'date:d/m/Y', 'valor' => 'float'];
-    protected $hidden = ['updated_at', 'created_at'];
+    protected $hidden = ['id', 'updated_at', 'created_at', 'user_id'];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 
     public function setDataAttribute($value)
     {
@@ -31,6 +37,4 @@ class Receita extends Model
             get: fn ($value) => $value / 100
         );
     }
-
-
 }

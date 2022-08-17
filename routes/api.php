@@ -1,10 +1,13 @@
 <?php
 
-use App\Http\Controllers\CategoriaController;
-use App\Http\Controllers\DespesaController;
-use App\Http\Controllers\ReceitaController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+use App\Http\Controllers\ResumoController;
+use App\Http\Controllers\ReceitaController;
+use App\Http\Controllers\DespesaController;
+use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserControler;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,11 +24,18 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
 
-// Route::post('/receitas', [ReceitaController::class, 'store']);
-// Route::get('/receitas', [ReceitaController::class, 'index']);
-// Route::get('/receitas/{id}', [ReceitaController::class, 'show']);
-// Route::put('/receitas/{id}', [ReceitaController::class, 'update']);
-// Route::delete('/receitas/{receita}', [ReceitaController::class, 'destroy']);
-Route::resource('receitas', ReceitaController::class)->except(['create', 'edit']);
-Route::resource('despesas', DespesaController::class)->except(['create', 'edit']);
-Route::resource('categorias', CategoriaController::class)->except(['create', 'edit']);
+Route::resource('receitas', ReceitaController::class)->except(['create', 'edit'])->middleware('auth:api');
+Route::resource('despesas', DespesaController::class)->except(['create', 'edit'])->middleware('auth:api');
+Route::get('receitas/{ano}/{mes}', [ReceitaController::class, 'porMes'])->middleware('auth:api');
+Route::get('despesas/{ano}/{mes}', [DespesaController::class, 'porMes'])->middleware('auth:api');
+Route::get('resumo/{ano}/{mes}', ResumoController::class)->middleware('auth:api');
+Route::group([
+    'middleware' => 'api',
+    'prefix' => 'auth'
+], function () {
+    Route::post('login', [AuthController::class, 'login']);
+    Route::post('logout', [AuthController::class, 'logout']);
+    Route::post('refresh', [AuthController::class ,'refresh']);
+    Route::post('me', [AuthController::class, 'me']);
+});
+Route::post('auth/register', UserControler::class);

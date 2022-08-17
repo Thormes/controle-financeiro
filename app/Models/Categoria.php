@@ -9,8 +9,8 @@ class Categoria extends Model
 {
     use HasFactory;
     protected $table = 'categorias';
+    public $timestamps = false;
     protected $fillable = ['nome'];
-    protected $hidden = ['updated_at', 'created_at'];
 
     public function despesas()
     {

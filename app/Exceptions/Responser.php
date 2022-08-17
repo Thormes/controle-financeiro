@@ -18,6 +18,12 @@ class Responser extends Response
             case 400:
                 $code_message = "erro na requisição";
                 break;
+            case 401:
+                $code_message = "autenticação falhou";
+                break;
+            case 403:
+                $code_message = "sem permissão";
+                break;
             case 404:
                 $code_message = "não encontrado";
                 break;
@@ -25,7 +31,7 @@ class Responser extends Response
                 $code_message = "conflito";
                 break;
             case 422:
-                $code_message = "Requisição contém erros";
+                $code_message = "requisição contém erros";
                 break;
             default:
                 $code_message = 'erro diverso';
