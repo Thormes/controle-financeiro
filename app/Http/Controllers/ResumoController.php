@@ -17,8 +17,8 @@ class ResumoController extends Controller
         $date = Carbon::createFromFormat("d/m/Y", "01/" . $mes . "/" . $ano);
         $receitas = Receita::whereMonth('data', $date->month)->whereYear('data', $date->year)->where('user_id', $user->id)->get();
         $despesas = Despesa::whereMonth('data', $date->month)->whereYear('data', $date->year)->where('user_id', $user->id)->with('categoria')->get();
-        $totalReceitas = $receitas->reduce(fn ($total, Receita $receita) => $total + $receita->valor, 0);
-        $totalDespesas = $despesas->reduce(fn ($total, Despesa $despesa) => $total + $despesa->valor, 0);
+        $totalReceitas = round($receitas->reduce(fn ($total, Receita $receita) => $total + $receita->valor, 0), 2);
+        $totalDespesas = round($despesas->reduce(fn ($total, Despesa $despesa) => $total + $despesa->valor, 0), 2);
         $saldoFinal = round($totalReceitas - $totalDespesas, 2);
         $retorno = [
             "receitas" => $totalReceitas,
@@ -29,7 +29,7 @@ class ResumoController extends Controller
         $categorias = Categoria::all();
         foreach ($categorias as $categoria) {
             $despesas_categoria = $despesas->filter(fn ($despesa) => $despesa->categoria == $categoria);
-            $retorno_categorias[$categoria->nome] = $despesas_categoria->reduce(fn ($total, Despesa $despesa) => $total + $despesa->valor, 0);
+            $retorno_categorias[$categoria->nome] = round($despesas_categoria->reduce(fn ($total, Despesa $despesa) => $total + $despesa->valor, 0), 2);
         }
         $retorno['despesas_por_categoria'] = $retorno_categorias;
         return $retorno;
