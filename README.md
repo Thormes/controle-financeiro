@@ -173,3 +173,7 @@ php artisan jwt:secret
 ```
 php artisan serve
 ```
+
+<br><br><hr>
+
+[Versão online da aplicação (heroku)](https://thormes-controle-financeiro.herokuapp.com/)
