@@ -70,7 +70,7 @@ class Handler extends ExceptionHandler
         if ($exception instanceof
             \Illuminate\Auth\AuthenticationException
         ) {
-            return Responser::error(403, "Usuário não tem permissão para acessar esse recurso");
+            return Responser::error(401, "Usuário não está autenticado (token ausente ou inválido)");
         }
         if (str_contains($exception->getMessage(), "[login]") && $exception instanceof RouteNotFoundException) {
             return Responser::error(401, "Usuário não está autenticado (token ausente ou inválido)");

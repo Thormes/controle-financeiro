@@ -47,13 +47,20 @@ class DespesaController extends Controller
 
     public function index(Request $request)
     {
-        $dados = $request->all();
-        if (!in_array('descricao', array_keys($dados))) {
-            $result = Despesa::with('categoria', 'user')->where('user_id', $request->user()->id)->paginate(env('PER_PAGE', 15));
-            return Paginador::paginar($result);
-        }
-        $result = Despesa::with('categoria', 'user')->where('user_id', $request->user()->id)->where('descricao', 'like', "%{$dados['descricao']}%");
-        return Paginador::paginar($result->paginate(env('PER_PAGE', 15)));
+        $descricao = $request->get('descricao');
+        $categoria = $request->get('categoria');
+        $result = Despesa::with('categoria', 'user')
+            ->where('user_id', $request->user()->id)
+            ->when($descricao, function ($query, $descricao) {
+                $query->where('descricao', 'like', "%{$descricao}%");
+            })->when($categoria, function ($query, $categoria) {
+                $categoria_encontrada = Categoria::where('nome', $categoria)->get();
+                if (count($categoria_encontrada) > 0) {
+                    $query->where('categoria_id', $categoria_encontrada->first()->id);
+                }
+            })
+            ->paginate(env('PER_PAGE', 15));
+        return Paginador::paginar($result);
     }
 
     public function show(Request $request, int $id)
